@@ -49,7 +49,8 @@ class ReviewManager:
                     'suggested_reply',
                     'status',  # pending_review, approved, rejected
                     'reviewer_notes',
-                    'received_date'
+                    'received_date',
+                    'risk_flag'
                 ]
                 
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -66,7 +67,8 @@ class ReviewManager:
                         'suggested_reply': review.get('reply', ''),
                         'status': 'pending_review',
                         'reviewer_notes': '',
-                        'received_date': review.get('date', '')
+                        'received_date': review.get('date', ''),
+                        'risk_flag': review.get('risk_flag', '')
                     })
             
             logger.info(f"✅ Review CSV generated: {filename}")
@@ -116,6 +118,56 @@ class ReviewManager:
         
         logger.info(f"✅ Found {len(approved)} approved replies out of {len(all_reviews)}")
         return approved
+
+
+def append_to_review_csv(email: Dict, category: str, reply_draft: str, risk_flag: bool) -> str:
+    """Append a single email review row to today's CSV file."""
+    manager = ReviewManager()
+    if not email:
+        logger.warning("No email provided to append to review CSV")
+        return None
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    filename = os.path.join(manager.output_dir, f"email_review_{today}.csv")
+
+    file_exists = os.path.exists(filename)
+    fieldnames = [
+        'email_id',
+        'from',
+        'subject',
+        'category',
+        'confidence',
+        'original_body',
+        'suggested_reply',
+        'status',
+        'reviewer_notes',
+        'received_date',
+        'risk_flag',
+    ]
+
+    try:
+        with open(filename, 'a', newline='', encoding='utf-8') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            if not file_exists:
+                writer.writeheader()
+            writer.writerow({
+                'email_id': email.get('id', ''),
+                'from': email.get('from', ''),
+                'subject': email.get('subject', ''),
+                'category': category,
+                'confidence': email.get('confidence', ''),
+                'original_body': email.get('body', '')[:500],
+                'suggested_reply': reply_draft,
+                'status': 'pending_review',
+                'reviewer_notes': '',
+                'received_date': email.get('date', ''),
+                'risk_flag': 'high' if risk_flag else 'low',
+            })
+        logger.info(f"✅ Appended review row to {filename}")
+        return filename
+    except Exception as e:
+        logger.error(f"❌ Failed to append to CSV: {e}")
+        return None
 
 
 # Example usage
