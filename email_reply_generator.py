@@ -3,9 +3,8 @@ Generate intelligent email replies based on classification and history
 """
 
 from typing import Dict
-from config import OPENAI_API_KEY, LLM_MODEL
+from config import OPENAI_API_KEY, LLM_MODEL, REPLY_TEMPLATE, TONE_GUIDANCE, DEFAULT_SIGNATURE
 import logging
-import json
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -14,6 +13,7 @@ logger = logging.getLogger(__name__)
 class ReplyGenerator:
     def __init__(self):
         self.use_llm = bool(OPENAI_API_KEY)
+        self.custom_template = REPLY_TEMPLATE.strip()
         
         # Template replies for each category
         self.templates = {
@@ -66,32 +66,39 @@ Customer Support Team"""
         
         if use_llm and self.use_llm:
             return self._generate_with_llm(email_obj, category)
-        else:
-            return self._get_template(category)
+        return self._get_template(category, email_obj)
 
     def _generate_with_llm(self, email_obj: Dict, category: str) -> str:
         """Generate personalized reply using LLM"""
         try:
             import openai
             openai.api_key = OPENAI_API_KEY
-            
-            prompt = f"""Generate a professional, friendly customer support reply to this email.
 
-Customer Category: {category}
-Original Subject: {email_obj['subject']}
-Original Message: {email_obj['body'][:500]}
+            template_hint = ""
+            if self.custom_template:
+                template_hint = (
+                    "\n请遵循以下售后模板（可根据内容微调，但保持结构与关键措辞）：\n"
+                    f"{self.custom_template}\n"
+                )
 
-Write a 2-3 sentence response that:
-1. Thanks the customer
-2. Acknowledges their {category.lower()}
-3. Tells them next steps (e.g., "Our team will respond in 24 hours")
-
-Keep it professional and warm."""
+            prompt = (
+                "请生成一封专业、友好且贴合语气要求的售后回复邮件。\n"
+                f"客户分类：{category}\n"
+                f"原始主题：{email_obj['subject']}\n"
+                f"原始内容：{email_obj['body'][:500]}\n"
+                f"{template_hint}"
+                "要求：\n"
+                "1. 简洁清晰，2-4 句为宜\n"
+                "2. 表达感谢并确认问题\n"
+                "3. 告知下一步处理（例如处理时效或需要的补充信息）\n"
+                f"4. 语气要求：{TONE_GUIDANCE}\n"
+                f"5. 署名使用：{DEFAULT_SIGNATURE}\n"
+            )
             
             response = openai.ChatCompletion.create(
                 model=LLM_MODEL,
                 messages=[
-                    {"role": "system", "content": "You are a helpful customer support agent. Write warm, professional replies."},
+                    {"role": "system", "content": "你是专业的售后客服，写作风格稳重、友好、可信。"},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,
@@ -102,11 +109,29 @@ Keep it professional and warm."""
             
         except Exception as e:
             logger.error(f"LLM reply generation failed: {e}")
-            return self._get_template(category)
+            return self._get_template(category, email_obj)
 
-    def _get_template(self, category: str) -> str:
-        """Get template reply for category"""
+    def _get_template(self, category: str, email_obj: Dict) -> str:
+        """Get template reply for category or render custom template."""
+        if self.custom_template:
+            return self._render_template(self.custom_template, email_obj, category)
         return self.templates.get(category, self.templates["Other"])
+
+    def _render_template(self, template: str, email_obj: Dict, category: str) -> str:
+        safe_values = {
+            "category": category,
+            "subject": email_obj.get("subject", ""),
+            "body": email_obj.get("body", ""),
+            "from": email_obj.get("from", ""),
+            "date": email_obj.get("date", ""),
+            "signature": DEFAULT_SIGNATURE,
+        }
+        return template.format_map(_SafeDict(safe_values))
+
+
+class _SafeDict(dict):
+    def __missing__(self, key):
+        return "{" + key + "}"
 
 
 def generate_reply(email_obj: Dict, category: str, confidence: float = None, use_llm: bool = False):
