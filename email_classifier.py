@@ -1,7 +1,7 @@
-"""   """
-AI-based email classification using LLM
-Supports OpenAI GPT models or rule-based classification
-"""   """   """
+"""
+AI-based email classification using LLM.
+Supports OpenAI GPT models or rule-based classification.
+"""
 
 from typing import Dict, Tuple
 from config import EMAIL_CATEGORIES, OPENAI_API_KEY, LLM_MODEL
@@ -45,8 +45,8 @@ class EmailClassifier:
 
     def _classify_with_llm(self, subject: str, body: str) -> Tuple[str, float]:
         """Classify using OpenAI GPT"""
-        try:   试一试:
-            prompt = f"""Classify the following customer support email into ONE of these categories:   试一试:
+        try:
+            prompt = f"""Classify the following customer support email into ONE of these categories:
 {', '.join(self.categories)}
 
 Email Subject: {subject}
@@ -54,7 +54,7 @@ Email Body: {body}
 
 Respond in JSON format:
 {{"category": "CATEGORY_NAME", "confidence": 0.95}}
-"""   """
+"""
             
             response = self.openai.ChatCompletion.create(
                 model=LLM_MODEL,

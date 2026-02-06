@@ -109,6 +109,14 @@ Keep it professional and warm."""
         return self.templates.get(category, self.templates["Other"])
 
 
+def generate_reply(email_obj: Dict, category: str, confidence: float = None, use_llm: bool = False):
+    """Convenience wrapper that returns reply text and a risk flag."""
+    generator = ReplyGenerator()
+    reply = generator.generate_reply(email_obj, category, use_llm=use_llm)
+    risk_flag = category == "Other" or (confidence is not None and confidence < 0.6)
+    return reply, risk_flag
+
+
 # Example usage
 if __name__ == "__main__":
     generator = ReplyGenerator()

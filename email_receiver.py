@@ -17,6 +17,10 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+def _has_imap_config() -> bool:
+    return bool(IMAP_SERVER and EMAIL_ADDRESS and EMAIL_APP_PASSWORD)
+
+
 class EmailReceiver:
     def __init__(self):
         self.server = None
@@ -26,6 +30,8 @@ class EmailReceiver:
     def connect(self):
         """Connect to IMAP server"""
         try:
+            if not _has_imap_config():
+                raise ValueError("Missing IMAP configuration (IMAP_SERVER/EMAIL_ADDRESS/EMAIL_APP_PASSWORD).")
             if IMAP_USE_SSL:
                 self.server = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT)
             else:
@@ -149,6 +155,19 @@ class EmailReceiver:
             logger.info(f"Marked email {msg_id} as read")
         except Exception as e:
             logger.error(f"Error marking email as read: {e}")
+
+
+def fetch_unread_emails(folder: str = "INBOX") -> List[Dict]:
+    """Convenience wrapper to fetch unread emails with automatic connect/disconnect."""
+    receiver = EmailReceiver()
+    if not _has_imap_config():
+        logger.warning("IMAP configuration missing. No emails fetched.")
+        return []
+    try:
+        receiver.connect()
+        return receiver.fetch_emails(folder=folder, unread_only=PROCESS_UNSEEN_ONLY)
+    finally:
+        receiver.disconnect()
 
 
 # Example usage
