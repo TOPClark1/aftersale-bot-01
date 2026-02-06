@@ -31,3 +31,9 @@ EMAIL_CATEGORIES = [
 ]
 
 CSV_OUTPUT_DIR = os.getenv("CSV_OUTPUT_DIR", "review_output")
+DATA_DIR = os.getenv("DATA_DIR", "data")
+SQLITE_DB_PATH = os.getenv("SQLITE_DB_PATH", os.path.join(DATA_DIR, "aftersale.db"))
+
+REPLY_TEMPLATE = os.getenv("REPLY_TEMPLATE", "")
+TONE_GUIDANCE = os.getenv("TONE_GUIDANCE", "专业、友好、耐心")
+DEFAULT_SIGNATURE = os.getenv("DEFAULT_SIGNATURE", "Customer Support Team")

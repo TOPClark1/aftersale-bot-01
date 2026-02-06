@@ -2,6 +2,7 @@ from email_receiver import fetch_unread_emails
 from email_classifier import EmailClassifier
 from email_reply_generator import ReplyGenerator
 from email_review_manager import ReviewManager
+from review_database import ReviewDatabase
 from config import EMAIL_ADDRESS, EMAIL_APP_PASSWORD, IMAP_SERVER
 
 
@@ -47,6 +48,7 @@ def run_daily_pipeline():
     classifier = EmailClassifier(use_llm=True)
     reply_generator = ReplyGenerator()
     review_manager = ReviewManager()
+    review_db = ReviewDatabase()
     reviews = []
 
     for email in emails:
@@ -72,6 +74,8 @@ def run_daily_pipeline():
     csv_path = review_manager.generate_review_csv(reviews)
     if csv_path:
         print(f"\n✅ Review CSV generated: {csv_path}")
+
+    review_db.save_reviews(reviews)
 
 if __name__ == "__main__":
     run_daily_pipeline()
