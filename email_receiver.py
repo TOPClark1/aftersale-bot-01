@@ -5,6 +5,7 @@ Fetches unread emails with full parsing
 
 import imaplib
 import email
+import email.message
 from email.header import decode_header
 from typing import List, Dict
 from config import (
