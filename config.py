@@ -38,3 +38,20 @@ SQLITE_DB_PATH = os.getenv("SQLITE_DB_PATH", os.path.join(DATA_DIR, "aftersale.d
 REPLY_TEMPLATE = os.getenv("REPLY_TEMPLATE", "")
 TONE_GUIDANCE = os.getenv("TONE_GUIDANCE", "专业、友好、耐心")
 DEFAULT_SIGNATURE = os.getenv("DEFAULT_SIGNATURE", "Customer Support Team")
+
+MARK_AS_READ_AFTER_PROCESS = _get_env_bool("MARK_AS_READ_AFTER_PROCESS", False)
+
+# Prompt knobs (edit these to iterate prompt strategy)
+CLASSIFIER_SYSTEM_PROMPT = os.getenv(
+    "CLASSIFIER_SYSTEM_PROMPT",
+    "You are a customer support email classifier. Respond only with strict JSON.",
+)
+REPLY_SYSTEM_PROMPT = os.getenv(
+    "REPLY_SYSTEM_PROMPT",
+    "You are a professional after-sales support agent.",
+)
+REPLY_LANGUAGE = os.getenv("REPLY_LANGUAGE", "en")
+
+FEISHU_BOT_WEBHOOK = os.getenv("FEISHU_BOT_WEBHOOK", "")
+FEISHU_TABLE_WEBHOOK = os.getenv("FEISHU_TABLE_WEBHOOK", "")
+ARCHIVE_DIR = os.getenv("ARCHIVE_DIR", "archive_reports")

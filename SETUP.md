@@ -264,3 +264,56 @@ db.add_situation_template(
 print("done")
 PY
 ```
+
+
+## 9) 你关心的“可见性”现在怎么看
+
+运行流水线后，页面会展示：
+
+- 总邮件数
+- 大模型/自动草拟数量
+- 需要人工处理数量（单独列出发件人 + 主题 + 类型）
+- 已取消未读标记数量（需要开启 `MARK_AS_READ_AFTER_PROCESS=true`）
+- 飞书表格推送状态
+
+如果你希望处理后自动取消未读标记，可设置：
+
+```bash
+export MARK_AS_READ_AFTER_PROCESS=true
+```
+
+## 10) 飞书集成
+
+### A. 飞书群机器人（日报推送）
+
+- `FEISHU_BOT_WEBHOOK`：用于每天 9 点推送日报消息。
+
+### B. 飞书表格（明细行推送）
+
+- `FEISHU_TABLE_WEBHOOK`：用于把每封邮件明细以 rows 结构推送到你的中间服务/飞书表格接入层。
+
+> 说明：不同企业飞书表格鉴权方式差异很大，当前使用 webhook 适配层方式，便于你对接现有飞书系统。
+
+## 11) 自动触发 App（每天北京时间 9 点）
+
+新增 `auto_trigger_app.py`：
+
+```bash
+python auto_trigger_app.py
+```
+
+它会：
+
+1. 每天北京时间 09:00 自动执行一次流水线。
+2. 自动生成并存档日报/周报/月报/年报（目录：`archive_reports/`）。
+3. 若配置了 `FEISHU_BOT_WEBHOOK`，会把前一天售后摘要推送到飞书。
+
+## 12) 提示词可修改位置（已标注）
+
+你后续要迭代提示词，直接改这些环境变量：
+
+- `CLASSIFIER_SYSTEM_PROMPT`（分类提示词）
+- `REPLY_SYSTEM_PROMPT`（回复系统提示词）
+- `REPLY_TEMPLATE`（固定模板）
+- `TONE_GUIDANCE`（语气要求）
+- `REPLY_LANGUAGE`（输出语言，如 `en`）

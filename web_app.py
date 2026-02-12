@@ -55,6 +55,17 @@ def _extract_csv_path(log_text: str):
     return match.group(1) if match else ""
 
 
+def _extract_run_summary(log_text: str):
+    for line in log_text.splitlines():
+        if line.startswith("RUN_SUMMARY_JSON:"):
+            raw = line.split("RUN_SUMMARY_JSON:", 1)[1].strip()
+            try:
+                return json.loads(raw)
+            except Exception:
+                return {}
+    return {}
+
+
 def _get_env_bool(env: dict, name: str, default: bool = False) -> bool:
     value = env.get(name)
     if value is None:
@@ -179,6 +190,7 @@ def _render_page(values=None, result=None, log_output=""):
         return html.escape(values.get(name, default), quote=True)
 
     status_html = ""
+    summary_html = ""
     if result:
         cls = "ok" if result["ok"] else "fail"
         status = "成功" if result["ok"] else "失败"
@@ -199,6 +211,27 @@ def _render_page(values=None, result=None, log_output=""):
         <h3>运行日志</h3>
         <pre>{html.escape(log_output)}</pre>
         """
+
+
+        summary = result.get("run_summary", {}) or {}
+        if summary:
+            manual_lines = "".join(
+                [f"<li>{html.escape(str(item.get('from','')))} | {html.escape(str(item.get('subject','')))} | {html.escape(str(item.get('category','')))} | conf={item.get('confidence','')}</li>" for item in summary.get("manual_items", [])]
+            )
+            if not manual_lines:
+                manual_lines = "<li>无</li>"
+            summary_html = f"""
+            <h3>运行可视化摘要</h3>
+            <div class="result {'ok' if summary.get('manual_count',0)==0 else 'fail'}">
+              总邮件数: {summary.get('total', 0)}<br>
+              大模型/自动草拟: {summary.get('auto_count', 0)}<br>
+              需要人工处理: {summary.get('manual_count', 0)}<br>
+              已取消未读标记: {summary.get('marked_read_count', 0)}<br>
+              飞书表格推送: {'成功' if summary.get('feishu_table_pushed') else '未配置或失败'}
+            </div>
+            <strong>需要人工处理邮件：</strong>
+            <ul>{manual_lines}</ul>
+            """
 
     return f"""<!doctype html>
 <html lang="zh-CN">
@@ -257,6 +290,7 @@ def _render_page(values=None, result=None, log_output=""):
       <button class="btn" type="submit" name="action" value="run_pipeline">运行流水线</button>
     </form>
     {status_html}
+    {summary_html}
   </div>
 </body>
 </html>"""
@@ -325,6 +359,7 @@ class AppHandler(BaseHTTPRequestHandler):
                     "db_path": db_path,
                     "db_exists": (ROOT_DIR / db_path).exists(),
                     "action": action,
+                    "run_summary": _extract_run_summary(log_output),
                 }
             except subprocess.TimeoutExpired as exc:
                 db_exists = (ROOT_DIR / db_path).exists()
@@ -342,6 +377,7 @@ class AppHandler(BaseHTTPRequestHandler):
                     "db_path": db_path,
                     "db_exists": db_exists,
                     "action": action,
+                    "run_summary": _extract_run_summary(log_output),
                 }
 
         self._send_html(_render_page(values=data, result=result, log_output=log_output))

@@ -3,7 +3,7 @@ Generate intelligent email replies based on classification and history
 """
 
 from typing import Dict
-from config import OPENAI_API_KEY, OPENAI_BASE_URL, LLM_MODEL, REPLY_TEMPLATE, TONE_GUIDANCE, DEFAULT_SIGNATURE
+from config import OPENAI_API_KEY, OPENAI_BASE_URL, LLM_MODEL, REPLY_TEMPLATE, TONE_GUIDANCE, DEFAULT_SIGNATURE, REPLY_SYSTEM_PROMPT, REPLY_LANGUAGE
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -94,13 +94,14 @@ Customer Support Team""",
                 "3. 告知下一步处理（例如处理时效或需要的补充信息）\n"
                 f"4. 语气要求：{TONE_GUIDANCE}\n"
                 f"5. 署名使用：{DEFAULT_SIGNATURE}\n"
+                f"6. 输出语言：{REPLY_LANGUAGE}（如果客户原文是英文，优先英文）\n"
             )
 
             if self.client is not None:
                 response = self.client.chat.completions.create(
                     model=LLM_MODEL,
                     messages=[
-                        {"role": "system", "content": "你是专业的售后客服，写作风格稳重、友好、可信。"},
+                        {"role": "system", "content": REPLY_SYSTEM_PROMPT},
                         {"role": "user", "content": prompt},
                     ],
                     temperature=0.7,
@@ -112,7 +113,7 @@ Customer Support Team""",
                 response = self.legacy_openai.ChatCompletion.create(
                     model=LLM_MODEL,
                     messages=[
-                        {"role": "system", "content": "你是专业的售后客服，写作风格稳重、友好、可信。"},
+                        {"role": "system", "content": REPLY_SYSTEM_PROMPT},
                         {"role": "user", "content": prompt},
                     ],
                     temperature=0.7,
