@@ -311,6 +311,70 @@ export MARK_AS_READ_AFTER_PROCESS=true
 
 > 说明：不同企业飞书表格鉴权方式差异很大，当前使用 webhook 适配层方式，便于你对接现有飞书系统。
 
+
+### 快速接入步骤（按这个做就行）
+
+#### 1) 接入飞书群机器人（日推送）
+
+1. 在飞书群里添加「自定义机器人」。
+2. 复制机器人 webhook（形如 `https://open.feishu.cn/open-apis/bot/v2/hook/xxxx`）。
+3. 配置环境变量：
+
+```bash
+export FEISHU_BOT_WEBHOOK="https://open.feishu.cn/open-apis/bot/v2/hook/xxxx"
+```
+
+4. 先手动测一条：
+
+```bash
+python - <<'PY'
+from feishu_client import FeishuClient
+ok = FeishuClient(bot_webhook="https://open.feishu.cn/open-apis/bot/v2/hook/xxxx").send_bot_text("售后机器人测试消息")
+print("bot push ok =", ok)
+PY
+```
+
+> 如果是企业群，记得在机器人安全设置里加入关键词（例如“售后”）或 IP 白名单。
+
+#### 2) 接入飞书表格（明细推送）
+
+当前程序通过 `FEISHU_TABLE_WEBHOOK` 往你的“中间接入层”推送 JSON：
+
+- 你需要准备一个可接收 POST 的 URL（可以是你自己的服务、云函数、n8n、Apifox Mock、Webhook.site 等）。
+- 程序会发送：
+
+```json
+{
+  "rows": [
+    {
+      "from": "customer@example.com",
+      "subject": "...",
+      "category": "Technical Issue",
+      "confidence": 0.85,
+      "risk_flag": "low",
+      "received_date": "..."
+    }
+  ]
+}
+```
+
+你的中间服务再把这些 `rows` 写入飞书多维表格即可。
+
+配置方式：
+
+```bash
+export FEISHU_TABLE_WEBHOOK="https://your-adapter.example.com/feishu-table-ingest"
+```
+
+#### 3) 每天 9 点自动推送日报
+
+```bash
+python auto_trigger_app.py
+```
+
+只要设置了 `FEISHU_BOT_WEBHOOK`，它会在每天北京时间 9 点自动推送前一天摘要。
+
+
 ## 11) 自动触发 App（每天北京时间 9 点）
 
 可选：如果你暂时不需要自动触发，这一节也可以先跳过。

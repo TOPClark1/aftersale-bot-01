@@ -40,6 +40,8 @@ def _build_env_from_form(form):
         "REPLY_TEMPLATE",
         "TONE_GUIDANCE",
         "DEFAULT_SIGNATURE",
+        "FEISHU_BOT_WEBHOOK",
+        "FEISHU_TABLE_WEBHOOK",
     ]
     for key in keys:
         value = form.get(key, "").strip()
@@ -297,6 +299,8 @@ def _render_page(values=None, result=None, log_output=""):
         <div class="full"><label>PIPELINE_TIMEOUT_SECONDS</label><input name="PIPELINE_TIMEOUT_SECONDS" value="{field('PIPELINE_TIMEOUT_SECONDS', str(DEFAULT_PIPELINE_TIMEOUT_SECONDS))}" placeholder="300"></div>
         <div class="full"><label>TONE_GUIDANCE</label><input name="TONE_GUIDANCE" value="{field('TONE_GUIDANCE', '专业、友好、耐心')}"></div>
         <div class="full"><label>DEFAULT_SIGNATURE</label><input name="DEFAULT_SIGNATURE" value="{field('DEFAULT_SIGNATURE', 'Customer Support Team')}"></div>
+        <div class="full"><label>FEISHU_BOT_WEBHOOK (可选)</label><input name="FEISHU_BOT_WEBHOOK" value="{field('FEISHU_BOT_WEBHOOK')}" placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/xxxx"></div>
+        <div class="full"><label>FEISHU_TABLE_WEBHOOK (可选)</label><input name="FEISHU_TABLE_WEBHOOK" value="{field('FEISHU_TABLE_WEBHOOK')}" placeholder="https://your-adapter.example.com/feishu-table-ingest"></div>
         <div class="full">
           <label>REPLY_TEMPLATE (可选，支持 {html.escape('{category}/{subject}/{body}/{from}/{date}/{signature}')}</label>
           <textarea name="REPLY_TEMPLATE">{html.escape(values.get('REPLY_TEMPLATE', ''))}</textarea>
