@@ -162,6 +162,7 @@ http://127.0.0.1:8000
 - 语气要求（`TONE_GUIDANCE`）
 - 模型和 API Key
 - 中转 API 地址（`OPENAI_BASE_URL`，例如 `https://poloai.top/v1`）
+- 流水线超时时间（`PIPELINE_TIMEOUT_SECONDS`，默认 300 秒）
 
 你可以按这个顺序操作：
 
@@ -175,6 +176,9 @@ http://127.0.0.1:8000
 - CSV 输出路径
 - 数据库文件是否创建
 - 完整运行日志
+
+如果页面显示 `Pipeline execution timed out`，通常不是“没有本地路径”，而是本次运行超过了超时秒数。
+可在页面把 `PIPELINE_TIMEOUT_SECONDS` 调大（例如 600）后重试。
 
 ## 7) Windows PowerShell 用户注意
 

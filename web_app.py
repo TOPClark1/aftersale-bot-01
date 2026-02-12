@@ -18,6 +18,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 ROOT_DIR = Path(__file__).resolve().parent
 DEFAULT_DB_PATH = "data/aftersale.db"
 PORT = 8000
+DEFAULT_PIPELINE_TIMEOUT_SECONDS = int(os.getenv("PIPELINE_TIMEOUT_SECONDS", "300"))
 
 
 def _build_env_from_form(form):
@@ -243,6 +244,7 @@ def _render_page(values=None, result=None, log_output=""):
         <div><label>OPENAI_BASE_URL (可选)</label><input name="OPENAI_BASE_URL" value="{field('OPENAI_BASE_URL')}" placeholder="https://poloai.top/v1"></div>
         <div><label>LLM_MODEL</label><input name="LLM_MODEL" value="{field('LLM_MODEL', 'gpt-4o-mini')}"></div>
         <div class="full"><label>SQLITE_DB_PATH</label><input name="SQLITE_DB_PATH" value="{field('SQLITE_DB_PATH', DEFAULT_DB_PATH)}"></div>
+        <div class="full"><label>PIPELINE_TIMEOUT_SECONDS</label><input name="PIPELINE_TIMEOUT_SECONDS" value="{field('PIPELINE_TIMEOUT_SECONDS', str(DEFAULT_PIPELINE_TIMEOUT_SECONDS))}" placeholder="300"></div>
         <div class="full"><label>TONE_GUIDANCE</label><input name="TONE_GUIDANCE" value="{field('TONE_GUIDANCE', '专业、友好、耐心')}"></div>
         <div class="full"><label>DEFAULT_SIGNATURE</label><input name="DEFAULT_SIGNATURE" value="{field('DEFAULT_SIGNATURE', 'Customer Support Team')}"></div>
         <div class="full">
@@ -303,13 +305,14 @@ class AppHandler(BaseHTTPRequestHandler):
             }
         else:
             try:
+                timeout_seconds = int(env.get("PIPELINE_TIMEOUT_SECONDS", str(DEFAULT_PIPELINE_TIMEOUT_SECONDS)))
                 completed = subprocess.run(
                     [sys.executable, "main.py"],
                     cwd=ROOT_DIR,
                     env=env,
                     capture_output=True,
                     text=True,
-                    timeout=120,
+                    timeout=timeout_seconds,
                     check=False,
                 )
                 log_output = (completed.stdout + "\n" + completed.stderr).strip()
@@ -322,13 +325,15 @@ class AppHandler(BaseHTTPRequestHandler):
                     "action": action,
                 }
             except subprocess.TimeoutExpired:
-                log_output = "Pipeline execution timed out (120s)."
+                db_exists = (ROOT_DIR / db_path).exists()
+                timeout_value = env.get("PIPELINE_TIMEOUT_SECONDS", str(DEFAULT_PIPELINE_TIMEOUT_SECONDS))
+                log_output = f"Pipeline execution timed out ({timeout_value}s)."
                 result = {
                     "ok": False,
                     "return_code": -1,
                     "csv_path": "",
                     "db_path": db_path,
-                    "db_exists": False,
+                    "db_exists": db_exists,
                     "action": action,
                 }
 
