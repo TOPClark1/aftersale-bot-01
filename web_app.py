@@ -312,6 +312,8 @@ class AppHandler(BaseHTTPRequestHandler):
                     env=env,
                     capture_output=True,
                     text=True,
+                    encoding="utf-8",
+                    errors="replace",
                     timeout=timeout_seconds,
                     check=False,
                 )
@@ -324,10 +326,15 @@ class AppHandler(BaseHTTPRequestHandler):
                     "db_exists": (ROOT_DIR / db_path).exists(),
                     "action": action,
                 }
-            except subprocess.TimeoutExpired:
+            except subprocess.TimeoutExpired as exc:
                 db_exists = (ROOT_DIR / db_path).exists()
                 timeout_value = env.get("PIPELINE_TIMEOUT_SECONDS", str(DEFAULT_PIPELINE_TIMEOUT_SECONDS))
+                partial_stdout = (exc.stdout or "") if isinstance(exc.stdout, str) else ""
+                partial_stderr = (exc.stderr or "") if isinstance(exc.stderr, str) else ""
+                partial_log = (partial_stdout + "\n" + partial_stderr).strip()
                 log_output = f"Pipeline execution timed out ({timeout_value}s)."
+                if partial_log:
+                    log_output += "\n\n--- Partial output before timeout ---\n" + partial_log
                 result = {
                     "ok": False,
                     "return_code": -1,

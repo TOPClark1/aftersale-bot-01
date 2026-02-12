@@ -217,6 +217,17 @@ python web_app.py
 然后打开 `http://127.0.0.1:8000`。
 
 
+如果你在 Windows 上看到类似 `UnicodeDecodeError: 'gbk' codec can't decode byte ...`，
+说明子进程输出包含 UTF-8 字符而系统默认按 GBK 解码。新版 `web_app.py` 已按 UTF-8 + replace 处理。
+你仍可在 PowerShell 里先执行：
+
+```powershell
+$env:PYTHONIOENCODING = "utf-8"
+```
+
+再运行 `python web_app.py`，兼容性会更好。
+
+
 ## 8) 售后情况库（aftersale_situation_library）
 
 系统会在首次初始化数据库时，自动把你提供的售后场景模板写入表 `aftersale_situation_library`。
