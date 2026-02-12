@@ -2,12 +2,15 @@
 
 import html
 import imaplib
+import json
 import os
 import re
 import smtplib
 import subprocess
 import sys
 from pathlib import Path
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -109,6 +112,65 @@ def _test_mail_connections(env: dict):
     return ok, "\n".join(logs)
 
 
+def _build_chat_completions_url(base_url: str) -> str:
+    base = (base_url or "https://api.openai.com/v1").strip().rstrip("/")
+    if base.endswith("/chat/completions"):
+        return base
+    if base.endswith("/v1"):
+        return f"{base}/chat/completions"
+    return f"{base}/v1/chat/completions"
+
+
+def _test_llm_connection(env: dict):
+    api_key = env.get("OPENAI_API_KEY", "")
+    model = env.get("LLM_MODEL", "")
+    base_url = env.get("OPENAI_BASE_URL", "")
+
+    missing = []
+    if not api_key:
+        missing.append("OPENAI_API_KEY")
+    if not model:
+        missing.append("LLM_MODEL")
+    if missing:
+        return False, f"缺少必要配置：{', '.join(missing)}"
+
+    url = _build_chat_completions_url(base_url)
+    payload = {
+        "model": model,
+        "messages": [{"role": "user", "content": "Reply with exactly: pong"}],
+        "temperature": 0,
+        "max_tokens": 8,
+    }
+    req = Request(
+        url=url,
+        method="POST",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+            "Accept": "application/json",
+        },
+        data=json.dumps(payload).encode("utf-8"),
+    )
+
+    try:
+        with urlopen(req, timeout=30) as resp:
+            body = resp.read().decode("utf-8", errors="ignore")
+        data = json.loads(body)
+        content = ""
+        try:
+            content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        except Exception:
+            pass
+        return True, f"✅ LLM 接口可用：{url}\nmodel={model}\n响应片段：{content[:80]}"
+    except HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="ignore") if hasattr(exc, "read") else str(exc)
+        return False, f"❌ LLM 接口调用失败（HTTP {exc.code}）：{detail[:500]}"
+    except URLError as exc:
+        return False, f"❌ LLM 接口网络错误：{exc}"
+    except Exception as exc:
+        return False, f"❌ LLM 接口异常：{exc}"
+
+
 def _render_page(values=None, result=None, log_output=""):
     values = values or {}
 
@@ -119,7 +181,13 @@ def _render_page(values=None, result=None, log_output=""):
     if result:
         cls = "ok" if result["ok"] else "fail"
         status = "成功" if result["ok"] else "失败"
-        action_name = "运行流水线" if result.get("action") == "run_pipeline" else "连接测试"
+        action = result.get("action")
+        if action == "run_pipeline":
+            action_name = "运行流水线"
+        elif action == "test_llm":
+            action_name = "API/模型测试"
+        else:
+            action_name = "邮箱连接测试"
         status_html = f"""
         <div class="result {cls}">
           <strong>{action_name}{status}</strong><br>
@@ -183,6 +251,7 @@ def _render_page(values=None, result=None, log_output=""):
         </div>
       </div>
       <button class="btn" type="submit" name="action" value="test_connection">先测试邮箱连接</button>
+      <button class="btn" type="submit" name="action" value="test_llm">测试 API Key / 模型</button>
       <button class="btn" type="submit" name="action" value="run_pipeline">运行流水线</button>
     </form>
     {status_html}
@@ -214,6 +283,16 @@ class AppHandler(BaseHTTPRequestHandler):
 
         if action == "test_connection":
             ok, log_output = _test_mail_connections(env)
+            result = {
+                "ok": ok,
+                "return_code": 0 if ok else 1,
+                "csv_path": "",
+                "db_path": db_path,
+                "db_exists": (ROOT_DIR / db_path).exists(),
+                "action": action,
+            }
+        elif action == "test_llm":
+            ok, log_output = _test_llm_connection(env)
             result = {
                 "ok": ok,
                 "return_code": 0 if ok else 1,
