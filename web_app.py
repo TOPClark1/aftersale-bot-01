@@ -13,6 +13,7 @@ from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from review_database import ReviewDatabase
 
 
 ROOT_DIR = Path(__file__).resolve().parent
@@ -183,6 +184,20 @@ def _test_llm_connection(env: dict):
         return False, f"❌ LLM 接口异常：{exc}"
 
 
+def _init_local_database(db_path: str):
+    db = ReviewDatabase(db_path=db_path)
+    import sqlite3
+
+    with sqlite3.connect(db_path) as conn:
+        scenario_count = conn.execute("SELECT COUNT(1) FROM aftersale_situation_library").fetchone()[0]
+    msg = (
+        f"✅ 数据库初始化完成：{db_path}\n"
+        f"售后情况模板条数：{scenario_count}\n"
+        "现在可以直接运行流水线。"
+    )
+    return True, msg
+
+
 def _render_page(values=None, result=None, log_output=""):
     values = values or {}
 
@@ -199,6 +214,8 @@ def _render_page(values=None, result=None, log_output=""):
             action_name = "运行流水线"
         elif action == "test_llm":
             action_name = "API/模型测试"
+        elif action == "init_db":
+            action_name = "数据库初始化"
         else:
             action_name = "邮箱连接测试"
         status_html = f"""
@@ -287,6 +304,7 @@ def _render_page(values=None, result=None, log_output=""):
       </div>
       <button class="btn" type="submit" name="action" value="test_connection">先测试邮箱连接</button>
       <button class="btn" type="submit" name="action" value="test_llm">测试 API Key / 模型</button>
+      <button class="btn" type="submit" name="action" value="init_db">一键生成本地数据库</button>
       <button class="btn" type="submit" name="action" value="run_pipeline">运行流水线</button>
     </form>
     {status_html}
