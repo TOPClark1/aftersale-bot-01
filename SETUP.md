@@ -168,3 +168,38 @@ http://127.0.0.1:8000
 - CSV 输出路径
 - 数据库文件是否创建
 - 完整运行日志
+
+## 7) Windows PowerShell 用户注意
+
+你报的这个错：
+
+```text
+bash : 无法将“bash”项识别为 cmdlet ...
+```
+
+说明你在 **PowerShell** 里输入了 `bash`，但机器上没有安装/启用 bash。
+本项目不要求必须用 bash，直接在 PowerShell 执行 Python 命令即可。
+
+PowerShell 示例：
+
+```powershell
+$env:IMAP_SERVER = "imap.exmail.qq.com"
+$env:IMAP_PORT = "993"
+$env:IMAP_USE_SSL = "true"
+$env:SMTP_SERVER = "smtp.exmail.qq.com"
+$env:SMTP_PORT = "587"
+$env:SMTP_USE_TLS = "true"
+$env:EMAIL_ADDRESS = "your_email@example.com"
+$env:EMAIL_APP_PASSWORD = "your_app_password"
+$env:OPENAI_API_KEY = "sk-..."
+$env:LLM_MODEL = "gpt-4o-mini"
+python main.py
+```
+
+如果你使用网页方式，也只需要：
+
+```powershell
+python web_app.py
+```
+
+然后打开 `http://127.0.0.1:8000`。

@@ -14,8 +14,10 @@ class ReplyGenerator:
     def __init__(self):
         self.use_llm = bool(OPENAI_API_KEY)
         self.custom_template = REPLY_TEMPLATE.strip()
-        
-        # Template replies for each category
+        self.client = None
+        self.legacy_openai = None
+        self._init_openai_client()
+
         self.templates = {
             "Technical Issue": """Thank you for reporting this issue. Our technical team has received your report and will investigate immediately. 
 
@@ -23,57 +25,56 @@ We typically respond to technical issues within 24 hours. In the meantime, if yo
 
 Best regards,
 Customer Support Team""",
-            
             "Billing & Payment": """Thank you for your inquiry. Our billing department will review your request and respond within 2 business hours.
 
 For urgent billing matters, please contact us directly at [support phone].
 
 Best regards,
 Customer Support Team""",
-            
             "Product Inquiry": """Thank you for your interest in our product! We're happy to help.
 
 A product specialist will provide detailed information about your inquiry shortly.
 
 Best regards,
 Customer Support Team""",
-            
             "Feature Request": """Thank you for the feature suggestion! We appreciate your feedback and will review your request with our product team.
 
 We forward valuable user suggestions to our development team.
 
 Best regards,
 Customer Support Team""",
-            
             "Other": """Thank you for contacting us. Our team will review your message and respond shortly.
 
 Best regards,
-Customer Support Team"""
+Customer Support Team""",
         }
 
+    def _init_openai_client(self):
+        if not self.use_llm:
+            return
+        try:
+            from openai import OpenAI
+            self.client = OpenAI(api_key=OPENAI_API_KEY)
+            logger.info("✅ OpenAI reply generator initialized (v1 client)")
+            return
+        except Exception:
+            pass
+        try:
+            import openai
+            openai.api_key = OPENAI_API_KEY
+            self.legacy_openai = openai
+            logger.info("✅ OpenAI reply generator initialized (legacy client)")
+        except ImportError:
+            logger.warning("⚠️ OpenAI not installed, fallback to template reply")
+            self.use_llm = False
+
     def generate_reply(self, email_obj: Dict, category: str, use_llm: bool = False) -> str:
-        """
-        Generate a reply to an email
-        
-        Args:
-            email_obj: Original email data
-            category: Classified email category
-            use_llm: Use LLM for personalized replies
-        
-        Returns:
-            Reply text
-        """
-        
         if use_llm and self.use_llm:
             return self._generate_with_llm(email_obj, category)
         return self._get_template(category, email_obj)
 
     def _generate_with_llm(self, email_obj: Dict, category: str) -> str:
-        """Generate personalized reply using LLM"""
         try:
-            import openai
-            openai.api_key = OPENAI_API_KEY
-
             template_hint = ""
             if self.custom_template:
                 template_hint = (
@@ -84,8 +85,8 @@ Customer Support Team"""
             prompt = (
                 "请生成一封专业、友好且贴合语气要求的售后回复邮件。\n"
                 f"客户分类：{category}\n"
-                f"原始主题：{email_obj['subject']}\n"
-                f"原始内容：{email_obj['body'][:500]}\n"
+                f"原始主题：{email_obj.get('subject', '')}\n"
+                f"原始内容：{email_obj.get('body', '')[:500]}\n"
                 f"{template_hint}"
                 "要求：\n"
                 "1. 简洁清晰，2-4 句为宜\n"
@@ -94,25 +95,38 @@ Customer Support Team"""
                 f"4. 语气要求：{TONE_GUIDANCE}\n"
                 f"5. 署名使用：{DEFAULT_SIGNATURE}\n"
             )
-            
-            response = openai.ChatCompletion.create(
-                model=LLM_MODEL,
-                messages=[
-                    {"role": "system", "content": "你是专业的售后客服，写作风格稳重、友好、可信。"},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=200
-            )
-            
-            return response.choices[0].message.content
-            
+
+            if self.client is not None:
+                response = self.client.chat.completions.create(
+                    model=LLM_MODEL,
+                    messages=[
+                        {"role": "system", "content": "你是专业的售后客服，写作风格稳重、友好、可信。"},
+                        {"role": "user", "content": prompt},
+                    ],
+                    temperature=0.7,
+                    max_tokens=200,
+                )
+                return response.choices[0].message.content or self._get_template(category, email_obj)
+
+            if self.legacy_openai is not None:
+                response = self.legacy_openai.ChatCompletion.create(
+                    model=LLM_MODEL,
+                    messages=[
+                        {"role": "system", "content": "你是专业的售后客服，写作风格稳重、友好、可信。"},
+                        {"role": "user", "content": prompt},
+                    ],
+                    temperature=0.7,
+                    max_tokens=200,
+                )
+                return response.choices[0].message.content
+
+            raise RuntimeError("OpenAI client not initialized")
+
         except Exception as e:
             logger.error(f"LLM reply generation failed: {e}")
             return self._get_template(category, email_obj)
 
     def _get_template(self, category: str, email_obj: Dict) -> str:
-        """Get template reply for category or render custom template."""
         if self.custom_template:
             return self._render_template(self.custom_template, email_obj, category)
         return self.templates.get(category, self.templates["Other"])
@@ -135,23 +149,21 @@ class _SafeDict(dict):
 
 
 def generate_reply(email_obj: Dict, category: str, confidence: float = None, use_llm: bool = False):
-    """Convenience wrapper that returns reply text and a risk flag."""
     generator = ReplyGenerator()
     reply = generator.generate_reply(email_obj, category, use_llm=use_llm)
     risk_flag = category == "Other" or (confidence is not None and confidence < 0.6)
     return reply, risk_flag
 
 
-# Example usage
 if __name__ == "__main__":
     generator = ReplyGenerator()
-    
+
     test_email = {
         "subject": "Cannot log in",
         "body": "I've been trying to log in for an hour but I keep getting an error.",
-        "from": "customer@example.com"
+        "from": "customer@example.com",
     }
-    
+
     reply = generator.generate_reply(test_email, "Technical Issue", use_llm=False)
     print("Generated Reply:")
     print(reply)
