@@ -211,3 +211,41 @@ python web_app.py
 ```
 
 然后打开 `http://127.0.0.1:8000`。
+
+
+## 8) 售后情况库（aftersale_situation_library）
+
+系统会在首次初始化数据库时，自动把你提供的售后场景模板写入表 `aftersale_situation_library`。
+
+可用下面命令查看数量与示例：
+
+```bash
+python - <<'PY'
+import sqlite3
+conn = sqlite3.connect('data/aftersale.db')
+count = conn.execute('select count(*) from aftersale_situation_library').fetchone()[0]
+print('scenario rows =', count)
+rows = conn.execute("select scenario_key, title from aftersale_situation_library order by id limit 5").fetchall()
+for r in rows:
+    print(r)
+conn.close()
+PY
+```
+
+后续你可以继续新增/更新场景（按 `scenario_key` 幂等更新）：
+
+```bash
+python - <<'PY'
+from review_database import ReviewDatabase
+
+db = ReviewDatabase()
+db.add_situation_template(
+    scenario_key="custom_case_x",
+    tags="#自定义,#测试",
+    language="zh",
+    title="自定义售后场景",
+    reply_template="您好，这是新的售后模板内容。",
+)
+print("done")
+PY
+```
