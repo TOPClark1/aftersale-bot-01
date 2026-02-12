@@ -3,7 +3,7 @@ Generate intelligent email replies based on classification and history
 """
 
 from typing import Dict
-from config import OPENAI_API_KEY, LLM_MODEL, REPLY_TEMPLATE, TONE_GUIDANCE, DEFAULT_SIGNATURE
+from config import OPENAI_API_KEY, OPENAI_BASE_URL, LLM_MODEL, REPLY_TEMPLATE, TONE_GUIDANCE, DEFAULT_SIGNATURE
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -54,7 +54,7 @@ Customer Support Team""",
             return
         try:
             from openai import OpenAI
-            self.client = OpenAI(api_key=OPENAI_API_KEY)
+            self.client = OpenAI(api_key=OPENAI_API_KEY, base_url=OPENAI_BASE_URL or None)
             logger.info("✅ OpenAI reply generator initialized (v1 client)")
             return
         except Exception:

@@ -161,6 +161,7 @@ http://127.0.0.1:8000
 - 售后模板（`REPLY_TEMPLATE`）
 - 语气要求（`TONE_GUIDANCE`）
 - 模型和 API Key
+- 中转 API 地址（`OPENAI_BASE_URL`，例如 `https://poloai.top/v1`）
 
 你可以先点击“先测试邮箱连接”验证 IMAP/SMTP 与账号密码，再点击“运行流水线”。
 
@@ -194,6 +195,7 @@ $env:SMTP_USE_TLS = "true"
 $env:EMAIL_ADDRESS = "your_email@example.com"
 $env:EMAIL_APP_PASSWORD = "your_app_password"
 $env:OPENAI_API_KEY = "sk-..."
+$env:OPENAI_BASE_URL = "https://poloai.top/v1"
 $env:LLM_MODEL = "gpt-4o-mini"
 python main.py
 ```

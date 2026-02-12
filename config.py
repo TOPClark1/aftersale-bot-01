@@ -20,6 +20,7 @@ EMAIL_APP_PASSWORD = os.getenv("EMAIL_APP_PASSWORD", "")
 PROCESS_UNSEEN_ONLY = _get_env_bool("PROCESS_UNSEEN_ONLY", True)
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "")
 LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o-mini")
 
 EMAIL_CATEGORIES = [

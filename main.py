@@ -73,7 +73,7 @@ def run_daily_pipeline():
 
     csv_path = review_manager.generate_review_csv(reviews)
     if csv_path:
-        print(f"\n✅ Review CSV generated: {csv_path}")
+        print(f"\nReview CSV generated: {csv_path}")
 
     review_db.save_reviews(reviews)
 

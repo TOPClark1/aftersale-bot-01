@@ -29,6 +29,7 @@ def _build_env_from_form(form):
         "EMAIL_ADDRESS",
         "EMAIL_APP_PASSWORD",
         "OPENAI_API_KEY",
+        "OPENAI_BASE_URL",
         "LLM_MODEL",
         "SQLITE_DB_PATH",
         "REPLY_TEMPLATE",
@@ -41,6 +42,7 @@ def _build_env_from_form(form):
             env[key] = value
         else:
             env.pop(key, None)
+    env.setdefault("PYTHONIOENCODING", "utf-8")
     return env
 
 
@@ -170,6 +172,7 @@ def _render_page(values=None, result=None, log_output=""):
         <div><label>EMAIL_ADDRESS</label><input name="EMAIL_ADDRESS" value="{field('EMAIL_ADDRESS')}" placeholder="your@email.com"></div>
         <div><label>EMAIL_APP_PASSWORD</label><input type="password" name="EMAIL_APP_PASSWORD" value="{field('EMAIL_APP_PASSWORD')}"></div>
         <div><label>OPENAI_API_KEY (可选)</label><input type="password" name="OPENAI_API_KEY" value="{field('OPENAI_API_KEY')}"></div>
+        <div><label>OPENAI_BASE_URL (可选)</label><input name="OPENAI_BASE_URL" value="{field('OPENAI_BASE_URL')}" placeholder="https://poloai.top/v1"></div>
         <div><label>LLM_MODEL</label><input name="LLM_MODEL" value="{field('LLM_MODEL', 'gpt-4o-mini')}"></div>
         <div class="full"><label>SQLITE_DB_PATH</label><input name="SQLITE_DB_PATH" value="{field('SQLITE_DB_PATH', DEFAULT_DB_PATH)}"></div>
         <div class="full"><label>TONE_GUIDANCE</label><input name="TONE_GUIDANCE" value="{field('TONE_GUIDANCE', '专业、友好、耐心')}"></div>
