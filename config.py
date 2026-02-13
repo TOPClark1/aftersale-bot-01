@@ -55,3 +55,6 @@ REPLY_LANGUAGE = os.getenv("REPLY_LANGUAGE", "en")
 FEISHU_BOT_WEBHOOK = os.getenv("FEISHU_BOT_WEBHOOK", "")
 FEISHU_TABLE_WEBHOOK = os.getenv("FEISHU_TABLE_WEBHOOK", "")
 ARCHIVE_DIR = os.getenv("ARCHIVE_DIR", "archive_reports")
+
+FEISHU_PUSH_ON_RUN = _get_env_bool("FEISHU_PUSH_ON_RUN", True)
+AUTO_RUN_ON_START = _get_env_bool("AUTO_RUN_ON_START", True)

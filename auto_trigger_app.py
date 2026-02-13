@@ -4,7 +4,7 @@ import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from config import FEISHU_BOT_WEBHOOK
+from config import FEISHU_BOT_WEBHOOK, AUTO_RUN_ON_START
 from main import run_daily_pipeline
 from feishu_client import FeishuClient
 from reporting import build_daily_feishu_message, archive_report, generate_period_report
@@ -33,6 +33,11 @@ def run_once_with_archives():
 def run_scheduler_forever():
     print("Auto app started. Will run every day at 09:00 (Asia/Shanghai).")
     last_run_day = None
+
+    if AUTO_RUN_ON_START:
+        run_once_with_archives()
+        last_run_day = datetime.now(TZ_SH).date().isoformat()
+        print("Startup run completed and summary pushed (if webhook configured).")
     while True:
         now = datetime.now(TZ_SH)
         if now.hour == 9 and now.minute == 0:

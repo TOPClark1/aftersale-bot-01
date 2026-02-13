@@ -42,6 +42,7 @@ def _build_env_from_form(form):
         "DEFAULT_SIGNATURE",
         "FEISHU_BOT_WEBHOOK",
         "FEISHU_TABLE_WEBHOOK",
+        "FEISHU_PUSH_ON_RUN",
     ]
     for key in keys:
         value = form.get(key, "").strip()
@@ -246,7 +247,7 @@ def _render_page(values=None, result=None, log_output=""):
               大模型/自动草拟: {summary.get('auto_count', 0)}<br>
               需要人工处理: {summary.get('manual_count', 0)}<br>
               已取消未读标记: {summary.get('marked_read_count', 0)}<br>
-              飞书表格推送: {'成功' if summary.get('feishu_table_pushed') else '未配置或失败'}
+              飞书表格推送: {'成功' if summary.get('feishu_table_pushed') else '未配置或失败'}<br>\n              飞书机器人推送: {'成功' if summary.get('feishu_bot_pushed') else '未配置或失败'}
             </div>
             <strong>需要人工处理邮件：</strong>
             <ul>{manual_lines}</ul>
@@ -301,6 +302,7 @@ def _render_page(values=None, result=None, log_output=""):
         <div class="full"><label>DEFAULT_SIGNATURE</label><input name="DEFAULT_SIGNATURE" value="{field('DEFAULT_SIGNATURE', 'Customer Support Team')}"></div>
         <div class="full"><label>FEISHU_BOT_WEBHOOK (可选)</label><input name="FEISHU_BOT_WEBHOOK" value="{field('FEISHU_BOT_WEBHOOK')}" placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/xxxx"></div>
         <div class="full"><label>FEISHU_TABLE_WEBHOOK (可选)</label><input name="FEISHU_TABLE_WEBHOOK" value="{field('FEISHU_TABLE_WEBHOOK')}" placeholder="https://your-adapter.example.com/feishu-table-ingest"></div>
+        <div class="full"><label>FEISHU_PUSH_ON_RUN (true/false)</label><input name="FEISHU_PUSH_ON_RUN" value="{field('FEISHU_PUSH_ON_RUN', 'true')}"></div>
         <div class="full">
           <label>REPLY_TEMPLATE (可选，支持 {html.escape('{category}/{subject}/{body}/{from}/{date}/{signature}')}</label>
           <textarea name="REPLY_TEMPLATE">{html.escape(values.get('REPLY_TEMPLATE', ''))}</textarea>

@@ -366,6 +366,26 @@ PY
 export FEISHU_TABLE_WEBHOOK="https://your-adapter.example.com/feishu-table-ingest"
 ```
 
+
+### 为什么你“运行流水线”后机器人没发消息？
+
+通常有 3 个原因：
+
+1. 没配置 `FEISHU_BOT_WEBHOOK`。
+2. 机器人安全策略拦截（关键词/IP 白名单）。
+3. 你只启动了定时器，尚未到 9:00。
+
+现在已支持：
+
+- `FEISHU_PUSH_ON_RUN=true`（默认）：每次手动运行流水线后，立即推送一条本次汇总。
+- `AUTO_RUN_ON_START=true`（默认）：`python auto_trigger_app.py` 启动时先跑一轮并推送一次，再进入每天 9 点定时。
+
+如果不想手动运行时推送，可设：
+
+```bash
+export FEISHU_PUSH_ON_RUN=false
+```
+
 #### 3) 每天 9 点自动推送日报
 
 ```bash
